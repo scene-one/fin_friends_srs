@@ -1,10 +1,10 @@
-# 핀프렌즈(FinFriends) SRS v1.1 — Software Requirements Specification
+# 핀프렌즈(FinFriends) SRS v1.2 — Software Requirements Specification
 
 - **기준 표준** — ISO/IEC/IEEE 29148:2018(E), *Systems and software engineering — Life cycle processes — Requirements engineering* §8.5.2(SRS 목차 예시) · §9.6(SRS 내용 요구사항)
 - **원본 문서** — `PRD_핀프렌즈_v0_3.md` (§ 표기는 원본 PRD의 절 번호를 가리킴)
 - **Owner 팀** — 제품기획 유림 / 정책·법령 병윤 / 경쟁·리뷰 하영 / 서비스분석 혜원
 - **최종 업데이트** — 2026-08-26
-- **판본** — v1.0(2026-08-25 최초 변환) → **v1.1**(2026-08-26 §8 개정: 실험 설계·8슬롯 모집 계획을 KPI 카운팅 계획으로 교체 — MVP 개발 단계에서 표본·판정 임계치를 미리 확정하는 것은 시기상조라는 판단). 변환 이력은 [§13](#13-문서-변경-이력)
+- **판본** — v1.0(2026-08-25 최초 변환) → v1.1(2026-08-26 §8 개정: 실험 설계·8슬롯 모집 계획을 KPI 카운팅 계획으로 교체) → **v1.2**(2026-08-26 기술 설계 다이어그램 12종 신설: Use Case·ERD·CLD·Component·Sequence·Flow Chart를 관련 챕터 본문에 배치해 배경지식 없는 독자를 위한 가독성 보강). 변환 이력은 [§13](#13-문서-변경-이력)
 
 ### 적합성 선언 (Annex C 재단(Tailoring) 신용)
 
@@ -19,6 +19,25 @@
 `[A]` 학술·공공통계 · `[관측]` 팀 직접 확인 · `[추론]` 해석·모델값 · `[가설]` 미검증 · `[설계 확정]` 확정 사양 · `✍️[합성 가설]` 페르소나·여정·Pain · `🧪[모의]` 모의 응답(**Evidence 아님**)
 
 > 🔴 **문서 지위 승계** — 고객 인터뷰 0건. 모든 목표 수치는 **[가설]**, 기준선은 대부분 **⬜ 미측정**입니다. 어느 수치도 성과로 인용할 수 없습니다. 이 등급 표기는 PRD의 인용 금지 정책(§9-2)을 그대로 승계하며, SRS 변환 과정에서 임의로 제거하지 않았습니다.
+
+### 다이어그램 색인
+
+> 🆕 v1.2에서 신설. 배경지식이 없는 독자도 표·텍스트만으로 전체 구조를 파악하기 어려운 지점마다 다이어그램을 배치했습니다. 아래는 전체 목록이며, 각 다이어그램은 해당 챕터 본문에 위치합니다.
+
+| 유형 | 제목 | 위치 |
+|---|---|:-:|
+| Component Diagram | 시스템 구성도 | §1.3.1 |
+| Use Case Diagram | 액터·유스케이스 개요 | §3.1 |
+| Sequence Diagram | 온보딩·동의 게이트 흐름 | §3.1.3(US 앞) |
+| Sequence Diagram | 계획 카드→결제→매칭→회고 흐름 | §3.1.3(US-4 뒤) |
+| Flow Chart | 결제 매칭 판정 로직 | §3.1.3(US-4 뒤) |
+| Sequence Diagram | 미션 승인·소급 지급 흐름 | §3.1.3(US-6 뒤) |
+| Sequence Diagram | 3일 미접속 알림 흐름 | §3.1.3(US-7 뒤) |
+| Sequence Diagram | 별→나무→숲 캐스케이드 | §3.1.1 뒤 |
+| ERD | 핵심 엔터티 관계도 | §3.5 |
+| Causal Loop Diagram | 실천-신뢰 성장 순환 구조 | §6.2 |
+| Flow Chart | 3구간 판정 로직 | §6.2 |
+| Flow Chart | KPI 카운팅 파이프라인 | §8 |
 
 ---
 
@@ -124,6 +143,62 @@
 
 만 14세 미만은 마이데이터 가입이 불가능해(F-01) 표준 오픈뱅킹 연동을 쓸 수 없으며, 이 제약이 위 폐쇄형 구조를 채택한 근거다(§11-3 ADR-003).
 
+**Component Diagram — 시스템 구성도**
+
+> 처음 이 문서를 읽는 사람을 위해, 아래는 위 문단을 그림으로 옮긴 것이다. 실선은 요청/응답, 점선은 부가 흐름을 뜻한다.
+
+```mermaid
+flowchart TB
+    subgraph Client["클라이언트"]
+        ChildApp["🧒 아이 앱"]
+        ParentApp["👤 부모 앱"]
+    end
+
+    subgraph Backend["핀프렌즈 백엔드"]
+        Auth["인증·동의 서비스<br/>(F7 · P-05·P-22)"]
+        Learn["학습·퀴즈 서비스<br/>(F3)"]
+        StarEngine["⭐ 별 지급 엔진<br/>(F4 · 트리거 8종)"]
+        Mission["미션·승인 서비스<br/>(F2 · F10)"]
+        Tree["성장 나무 서비스<br/>(F1)"]
+        Forest["월간 숲 서비스<br/>(F9)"]
+        PlanCard["계획 카드·매칭 서비스<br/>(F8)"]
+        Wishlist["위시리스트 서비스<br/>(F12)"]
+        Notify["알림 서비스<br/>(F11)"]
+        EventLog["이벤트 로그·집계<br/>(§3.4.2 · §8.1)"]
+    end
+
+    subgraph External["외부"]
+        PartnerAPI["제휴사 API<br/>(선불업 — 카드 발행·가맹점망)"]
+    end
+
+    ChildApp <--> Auth
+    ParentApp <--> Auth
+    ChildApp <--> Learn
+    ChildApp <--> Mission
+    ChildApp <--> PlanCard
+    ChildApp <--> Wishlist
+    ParentApp <--> Mission
+    ParentApp <--> Tree
+    ParentApp <--> Forest
+    ParentApp <--> Notify
+
+    Learn --> StarEngine
+    Mission --> StarEngine
+    PlanCard --> StarEngine
+    Wishlist --> StarEngine
+    StarEngine --> Tree
+    Tree --> Forest
+
+    PlanCard <--> PartnerAPI
+    Auth -.->|"충전·해지 요청"| PartnerAPI
+
+    StarEngine -.-> EventLog
+    Tree -.-> EventLog
+    Mission -.-> EventLog
+    PlanCard -.-> EventLog
+    Notify -.-> EventLog
+```
+
 #### 1.3.2 Product functions *(§9.6.5)*
 
 | F | 기능 | 우선순위 |
@@ -194,6 +269,65 @@
 
 > 표준 5.2.4는 "condition-action table과 use case도 요구사항을 기술하는 수단"으로 인정한다. 아래 사용자 스토리·Given/When/Then·수용 기준(AC)이 이 SRS의 기능 요구사항 본문이다.
 
+**Use Case Diagram — 액터·유스케이스 개요**
+
+> 아래는 §1.3.3 인물과 §3.1.1 기능 목록을 "누가 무엇을 하는가"로 재배열한 것이다. 세부 흐름은 §3.1.3의 스토리별 Sequence Diagram을 참조.
+
+```mermaid
+flowchart LR
+    Parent(["👤 부모(보호자)"])
+    Child(["🧒 아이"])
+    Partner(["🏦 제휴사(선불업)"])
+    Ops(["🛠 운영자<br/>(개발·정책·콘텐츠 담당)"])
+
+    subgraph UC1["벌기 · 잘쓰기 · 모으기 · 불리기"]
+        U1(["학습 4주제·퀴즈 풀기(F3)"])
+        U2(["미션 수행(F2)"])
+        U3(["소비 계획 카드 작성(F8)"])
+        U4(["위시리스트 등록(F12)"])
+    end
+
+    subgraph UC2["확인 · 신뢰"]
+        U5(["성장 나무 확인(F1)"])
+        U6(["월간 숲 확인(F9)"])
+        U7(["정체 원인 확인(US-3)"])
+        U8(["계획↔실제 소비 대조(F8)"])
+    end
+
+    subgraph UC3["관리 · 승인"]
+        U9(["법정대리인 동의(F7)"])
+        U10(["미션 승인/거절(F10)"])
+        U11(["미접속 알림 수신(F11)"])
+        U12(["계획 카드 대행 작성(F8)"])
+    end
+
+    subgraph UC4["운영"]
+        U13(["정합성·규제 모니터링(§4)"])
+        U14(["회고 문장 풀 관리(US-5 AC-E1)"])
+    end
+
+    Child --> U1
+    Child --> U2
+    Child --> U3
+    Child --> U4
+    Child --> U5
+    Child --> U6
+    Child --> U8
+
+    Parent --> U5
+    Parent --> U6
+    Parent --> U7
+    Parent --> U8
+    Parent --> U9
+    Parent --> U10
+    Parent --> U11
+    Parent --> U12
+
+    Partner --> U8
+    Ops --> U13
+    Ops --> U14
+```
+
 #### 3.1.1 기능 목록 및 우선순위
 
 | F | 기능 | 연결 Pain | Job | 중요도 | 난이도 | 우선순위 | 근거 |
@@ -219,6 +353,31 @@
 | **F18** | 📤 기존 앱 기록 이전 / 병행 사용 | (H1 Anxiety) | J3 | 2 | **5** | **Won't** | 난이도 5 · 병행 수요 낮음 |
 
 **집계** — Must 8 · Should 5 · Could 3 · Won't 1 = 17개
+
+**Sequence Diagram — 별→나무→숲 캐스케이드**
+
+> F4·F1·F9는 각각 독립된 기능처럼 보이지만 실제로는 하나의 사슬이다. 이 그림은 그 사슬을 순서대로 보여준다.
+
+```mermaid
+sequenceDiagram
+    participant Star as ⭐ 별 지급 엔진(F4)
+    participant Tree as 🌳 성장 나무(F1)
+    participant Forest as 🌲 월간 숲(F9)
+    actor P as 부모 앱
+
+    Star->>Star: 트리거 8종 중 하나 발생 → star_ledger_entry 기입
+    Star->>Tree: tree_state_changed(조건 충족 반영)
+    Tree->>Tree: 학습 + 퀴즈 + 실천 조건 모두 충족?
+    alt 모두 충족
+        Tree->>Tree: 칸 승급(씨앗 → 새싹 → 나무)
+    else 미충족
+        Tree->>Tree: 정체 일수 누적(14일 경과 시 정체로 표시)
+    end
+    Tree-->>P: tree_view_opened 시 진행도·정체 원인 노출
+    Note over Tree,Forest: 주기 종료 시점
+    Tree->>Forest: 4칸 최종 단계 + 전월 대비 델타 스냅샷 적재
+    Forest-->>P: forest_view_opened 시 "지난달과 비교" 노출
+```
 
 #### 3.1.2 스프린트 실현성
 
@@ -248,6 +407,36 @@
 - **코딩 규칙** — 「변화 회상」 성공 = 응답에 비교시점·변화방향·대상 3요소 포함, 코더 2인 독립 코딩, **Cohen's κ ≥ 0.6**. 불일치 시 제3자 판정.
 - **표본 미확보 시** — n≥8 정상판정 · 5≤n<8 HOLD 고정(PASS 불가) · n<5 판정불가.
 - **3구간 판정** — ✅ PASS(통과선 이상) · ⚠️ HOLD(회색지대, 표본+4 후 재판정, 2회 연속 HOLD→FAIL) · ✕ FAIL(실패선 이하, 재설계).
+
+**Sequence Diagram — 온보딩·동의 게이트 흐름**
+
+> 아래 8개 스토리는 전부 "이미 가입한 가정"을 전제로 한다. 그 전제가 만들어지는 첫 흐름은 다음과 같다(F7 · US-8 · 부록 다이어그램 A와 연결).
+
+```mermaid
+sequenceDiagram
+    actor P as 부모 앱
+    participant Auth as 인증·동의 서비스
+    participant Partner as 제휴사 API
+    actor C as 아이 앱
+
+    P->>Auth: 가입·본인인증 요청
+    Auth-->>P: 계좌 연결 단계 진입
+    P->>Auth: 법정대리인 동의 제출(P-05·P-22)
+    Auth->>Auth: 동의 상태 = 완료로 갱신
+    P->>Partner: 카드 신청
+    opt 카드 배송 대기 중
+        P--)C: 학습·퀴즈만 허용(카드 필요 기능은 잠금, F16)
+    end
+    Partner-->>P: 카드 발급 완료
+    P->>Auth: 자녀 초대 + 카드 등록
+    Auth->>C: 아이 계정 활성화
+    C->>Auth: 앱 진입 시도
+    alt 동의 미완
+        Auth--xC: 진입 차단(consent_gate_blocked)
+    else 동의 완료
+        Auth->>C: 진입 허용 → 학습 → 퀴즈 → ⭐1 → 아이템 제시
+    end
+```
 
 **US-1 — 변화를 한 문장으로 읽는다** `J2` `★C1`
 > As a H1 정미경(부모), I want 화면을 열었을 때 무엇이 달라졌는지를 읽고, so that 아이가 배운 것이 행동으로 이어졌는지 짧은 시간에 확인할 수 있다.
@@ -297,6 +486,58 @@
 | **AC-E1** | Given 한 카드에 여러 결제 매칭 / When 대조화면 생성 / Then 합계로 판정, 업종별 내역 전부 나열 | 단위테스트 |
 | **AC-E2** | Given 계획 업종과 다른 업종에서만 결제(금액은 계획 이내) / When 대조화면 생성 / Then ⬜ 판정 미결 — 업종 일치를 ⭐판정에 넣을지 팀 결정 대기 | 🔴 팀 결정 대기 |
 
+**Sequence Diagram — 계획 카드→결제→매칭→회고 흐름**
+
+```mermaid
+sequenceDiagram
+    actor C as 아이/부모 앱
+    participant PlanCard as 계획 카드 서비스
+    participant Partner as 제휴사 API
+    participant Match as 매칭 엔진
+    participant Star as 별 지급 엔진
+
+    C->>PlanCard: 계획 카드 작성(어디서·업종·얼마까지)
+    PlanCard->>PlanCard: plan_card_created 이벤트 기록
+    Note over C,Partner: 실제 소비 발생
+    Partner->>Match: payment_settled(가맹점·업종·금액)
+    Match->>PlanCard: 매칭되는 계획 카드 조회
+    alt 매칭되는 계획 카드 있음
+        Match->>Match: 업종·금액 대조(정확도 ≥90% 목표, AC2)
+        Match->>C: 계획↔실제 대조 화면 제시
+        C->>C: [확인했어요] 클릭 → retro_viewed
+        alt 실제 ≤ 계획(갈래 A)
+            Match->>Star: ⭐1 지급(plan_met=true)
+        else 실제 > 계획(갈래 B)
+            Match-->>C: 회고만 표시, ⭐ 없음(plan_met=false)
+        end
+    else 매칭되는 계획 카드 없음
+        Match-->>C: "다음엔 가기 전에 적어볼까요?" 유도
+        Note over Match: ⭐ 미지급 — C5 사각지대(§7.5)
+    end
+```
+
+**Flow Chart — 결제 매칭 판정 로직**
+
+> 위 시퀀스의 "매칭 엔진" 내부 판정 규칙을 펼친 것이다. US-4 AC2·AC-E1·AC-E2가 이 흐름의 각 분기에 대응한다.
+
+```mermaid
+flowchart TD
+    A["카드 결제 발생<br/>(payment_settled)"] --> B{"매칭되는<br/>계획 카드 존재?"}
+    B -->|"없음"| C["'다음엔 적어볼까요?' 유도<br/>⭐ 미지급"]
+    B -->|"있음"| D{"업종·가맹점명<br/>일치?"}
+    D -->|"불일치(금액은 이내)"| E["⬜ 판정 미결<br/>(AC-E2 · 팀 결정 대기)"]
+    D -->|"일치"| F{"복수 결제가<br/>한 카드에 매칭?"}
+    F -->|"예"| G["합계로 판정(AC-E1)"]
+    F -->|"아니오"| H["단건 판정"]
+    G --> I{"실제 합계 ≤ 계획?"}
+    H --> I
+    I -->|"예(갈래 A)"| J["⭐1 지급<br/>plan_met=true"]
+    I -->|"아니오(갈래 B)"| K["⭐ 없음(차감도 없음)<br/>plan_met=false"]
+
+    style C fill:#ffe0e0,stroke:#c00
+    style E fill:#fff4d6,stroke:#e69500
+```
+
 **US-5 — 참은 날이 확인만 한 날과 다르다** `J1` `△C6`
 > As a 배주안(아이), I want 참은 날이 확인만 한 날과 다르게 느껴지고, so that 참는 쪽이 더 좋은 선택으로 학습된다.
 
@@ -323,6 +564,35 @@
 | **AC-E2** 🔴 | Given 완료시점 주기 종료 후 승인 / When 소급 실행 / Then ⭐는 지급하되 나무조건은 완료시점 주기(N)에 귀속, 월간숲 스냅샷 반영 | 단위테스트 |
 | **AC-E3** | Given 승인 대기 5건 이상 / When 일괄 승인 / Then 각 건 완료시각 기준 개별 소급 | 단위테스트 |
 
+**Sequence Diagram — 미션 승인·소급 지급 흐름**
+
+```mermaid
+sequenceDiagram
+    actor C as 아이 앱
+    participant Mission as 미션·승인 서비스
+    actor P as 부모 앱
+    participant Star as 별 지급 엔진
+    participant Tree as 성장 나무 서비스
+
+    C->>Mission: 미션 완료 보고
+    Mission->>Mission: approval_state_changed(state=pending)
+    Mission-->>P: 승인 요청 알림
+    alt 48시간 내 승인
+        P->>Mission: 승인
+        Mission->>Star: ⭐1 지급(완료 시점 기준)
+    else 48시간 초과 후 승인
+        P->>Mission: 지연 승인
+        Mission->>Star: 소급 지급(완료 시점 기준, state=backfilled)
+        Mission-->>P: "승인 대기 N건" 배지 갱신
+    else 거절
+        P->>Mission: 거절 + 사유
+        Mission-->>C: "승인되지 않음 + 사유" 표시(AC-E1)
+    end
+    Star->>Star: star_ledger_entry 기입(idempotency_key)
+    Star->>Tree: 나무 조건 갱신(완료 시점의 cycle_id에 귀속)
+    Tree-->>P: 나무 진행도 반영
+```
+
 **US-7 — 아이가 멈춘 것을 3일 안에 안다** `J3`
 > As a 부모(H2형 포함), I want 아이가 앱을 안 열면 곧 알게 되고, so that 다음 달 충전 시점에야 알고 결론 내리지 않는다.
 
@@ -334,6 +604,33 @@
 | **AC-E1** | Given 푸시 차단 / When 72h 판정 / Then 앱내 배너+문자 대체, 차단상태 계측 | 권한상태+이벤트 |
 | **AC-E2** | Given 앱 삭제 / When 72h 시점 / Then "재설치 안내"로 분기, 다른 이벤트코드 | 이벤트코드검수 |
 | **AC-E3** | Given 71시간 시점 재접속 / When 배치 실행 / Then 알림 미발송, 오탐 0건 | 단위테스트 |
+
+**Sequence Diagram — 3일 미접속 알림 흐름**
+
+```mermaid
+sequenceDiagram
+    participant Batch as 배치 스케줄러
+    participant Acct as 아동 계정 서비스
+    participant Notify as 알림 서비스
+    actor P as 부모 앱
+
+    loop 주기 실행
+        Batch->>Acct: last_session_at 조회
+        Acct-->>Batch: 최종 접속 시각
+        alt 72시간 경과 & 재접속 없음
+            Batch->>Notify: 미접속 알림 트리거
+            Notify->>Notify: inactivity_notified(sent_at) 기록
+            alt 푸시 알림 가능
+                Notify->>P: 푸시 발송(멈춘 지점 포함)
+            else 푸시 차단됨
+                Notify->>P: 앱 내 배너 + 문자 대체(AC-E1)
+            end
+        else 71시간대 재접속 확인
+            Batch->>Batch: 알림 미발송(오탐 방지, AC-E3)
+        end
+    end
+    P->>Notify: 알림 열람(opened_at 기록)
+```
 
 **US-8 — 시간을 쪼개서 시작할 수 있다** `J3` `C4`
 > As a H2 배성우(자영업 부모), I want 온보딩을 한 번에 끝내지 않아도 되고, so that 가게 일 사이에 나눠서 시작할 수 있다.
@@ -424,6 +721,84 @@
 > **적재 규칙** — 모든 이벤트에 `idempotency_key`, `client_ts`/`server_ts` 필수. 오프라인 이벤트는 `client_ts` 기준 주차 귀속.
 
 ### 3.5 Logical database requirements *(§9.6.15)*
+
+**ERD — 핵심 엔터티 관계도**
+
+```mermaid
+erDiagram
+    보호자계정 ||--o{ 아동계정 : "보유"
+    아동계정 ||--o{ 학습이수 : "기록"
+    아동계정 ||--o{ 실천판정 : "발생"
+    아동계정 ||--o{ 별원장 : "적립"
+    아동계정 ||--o{ 나무상태 : "가짐(4칸)"
+    아동계정 ||--o{ 월간숲스냅샷 : "누적"
+    아동계정 ||--o{ 소비내역 : "발생"
+    실천판정 ||--o| 별원장 : "지급 트리거"
+    별원장 }o--|| 나무상태 : "승급 조건 반영"
+    나무상태 }o--|| 월간숲스냅샷 : "주기 종료 시 스냅샷"
+    소비내역 ||--o| 별원장 : "회고 준수 시 지급"
+
+    보호자계정 {
+        string id
+        string 인증정보
+        string 동의상태
+        datetime 동의일시
+        string 알림시간대설정
+    }
+    아동계정 {
+        string id
+        string 보호자_id
+        int 생년
+        string 기기유형 "참고 정보 · §7-2 R2"
+    }
+    학습이수 {
+        string 아동_id
+        string 주제
+        bool 완주여부
+        int 퀴즈정답수
+    }
+    실천판정 {
+        string 아동_id
+        string 경로
+        datetime 판정시각
+        string 판정방식 "자동 or 부모승인"
+        int 승인지연시간
+    }
+    별원장 {
+        string 아동_id
+        int 증감
+        string 트리거코드 "1~8"
+        int 잔액
+        string 사유
+        string idempotency_key
+    }
+    나무상태 {
+        string 아동_id
+        string 칸
+        string 단계
+        bool 조건_학습
+        bool 조건_퀴즈
+        bool 조건_실천
+        date 주기시작일
+        int 정체일수
+    }
+    월간숲스냅샷 {
+        string 아동_id
+        string 연월
+        json 사칸최종단계
+        json 학습실천소비집계
+        json 전월대비델타
+        int 총획득별
+    }
+    소비내역 {
+        string 아동_id
+        int 계획금액
+        int 실제결제금액
+        string 가맹점분류
+        string 회고상태
+        string 회고문장id
+    }
+```
 
 **핵심 엔터티**
 
@@ -576,6 +951,36 @@ WPA(주차 w) = 분자 / 분모
 | 측정 주기 | 주간(ISO 주 마감 후 D+1 배치) |
 | 측정 경로 | `practice_credited` + 활성 아동 스냅샷 |
 
+**Causal Loop Diagram — 실천·신뢰 성장 순환 구조**
+
+> "왜 WPA 하나인가"를 그림으로 먼저 보면 아래 문장이 더 쉽게 읽힌다. 초록 경로는 제품이 의도한 선순환(R), 빨간 경로는 그 선순환이 끊길 때 벌어지는 악순환(B)이다.
+
+```mermaid
+flowchart LR
+    A["아이 실천 행동"] -->|"+"| B["⭐ 별 획득"]
+    B -->|"+"| C["🌳 나무 성장"]
+    C -->|"+"| D["부모 확인·신뢰(선언②)"]
+    D -->|"+"| E["다음달 충전·지속 사용(O14)"]
+    E -->|"+"| A
+
+    C -->|"14일 정체"| F["정체 발생"]
+    F -->|"+"| G["오귀인/앱 불신(C3)"]
+    G -->|"-"| D
+    G -->|"-"| A
+
+    H["계획 카드 작성(F8)"] -->|"+"| I["계획↔실제 대조 가능"]
+    I -->|"+ 계획 준수 시"| B
+    I -.->|"넘김 시 — 영향 없음"| J["회고만 · ⭐ 없음"]
+
+    H -.->|"미작성 시"| K["대조 불가(C5 사각지대)"]
+    K -.->|"-"| A
+
+    classDef loopR fill:#e8f2e4,stroke:#4F7A4A;
+    classDef loopB fill:#ffe0e0,stroke:#c00;
+    class A,B,C,D,E loopR;
+    class F,G,K loopB;
+```
+
 **왜 이것 하나인가** — ① 선언 ①(성장이 일어난다)이 ②의 전제라 ①이 죽으면 어떤 전달 지표도 함께 죽음 ② C2(실천 공백)가 AOS·DOS 두 지표에서 순서가 흔들리지 않는 유일한 항목 ③ 나무 승급 조건에 실천 횟수가 포함돼 WPA가 제품 전체가 파생되는 단일 원천 지표(상세 배경 — §11.2 ADR-002).
 
 **3구간 판정 규칙 — 모든 KPI·AC·실험 공통**
@@ -593,6 +998,27 @@ WPA(주차 w) = 분자 / 분모
 | 계획 카드 작성률(O7) | ≥50% | 30~49% | <30% |
 | 정체 원인 열람률(O10) | ≥60% | 40~59% | <40% |
 | WPA(β 기준) | ≥5/8 | 3~4/8 | ≤2/8 |
+
+**Flow Chart — 3구간 판정 로직**
+
+```mermaid
+flowchart TD
+    A["측정값 확보"] --> B{"표본 n ≥ 8?<br/>(인터뷰류 지표만 해당)"}
+    B -->|"n < 5"| C["판정 불가 — 실험 미실시로 기록"]
+    B -->|"5 ≤ n < 8"| D["HOLD 고정<br/>(PASS 판정 불가)"]
+    B -->|"n ≥ 8 또는 이벤트 카운팅"| E{"통과선 이상?"}
+    E -->|"예"| F["✅ PASS — 다음 게이트로 진행"]
+    E -->|"아니오"| G{"실패선 초과<br/>(회색지대)?"}
+    G -->|"예"| H["⚠️ HOLD — 표본 +4 후 재판정"]
+    H --> I{"2회 연속 HOLD?"}
+    I -->|"예"| J["FAIL로 간주"]
+    I -->|"아니오"| A
+    G -->|"아니오(실패선 이하)"| K["✕ FAIL — 지정된 재설계 실행"]
+
+    style F fill:#e8f2e4,stroke:#4F7A4A
+    style H fill:#fff4d6,stroke:#e69500
+    style K fill:#ffe0e0,stroke:#c00
+```
 
 **보조 KPI**
 
@@ -704,6 +1130,26 @@ WPA(주차 w) = 분자 / 분모
 > *(Validation 프로세스 §6.5.3 참조 — "시스템이 의도한 목적을 달성하는지 객관적 증거로 확인")*
 >
 > 🔄 **2026-08-26 개정** — 이 절은 원래 특정 실험 가설(E1~E11)과 인터뷰 대상자 8슬롯 모집 계획을 미리 확정하는 형태였다. **MVP 개발 관점에서는 표본·판정 임계치를 지금 확정하는 것이 시기상조**라 판단해 제거했다. 대신 **KPI 각 요소를 어떤 사용자 행동으로, 어떤 이벤트로 카운트할 것인지**의 계측 계획으로 대체한다. 인터뷰 등 정성 조사가 필요한 항목은 남기되, 표본 수·모집 대상·판정 임계치는 지금 정하지 않는다(§8.2).
+
+**Flow Chart — KPI 카운팅 파이프라인**
+
+> 아래 §8.1 표의 각 행은 결국 이 파이프라인 위에서 만들어진다.
+
+```mermaid
+flowchart LR
+    A["앱 내 사용자 행동"] --> B["이벤트 발생<br/>(practice_credited 등 §3.4.2의 10종)"]
+    B --> C["idempotency_key ·<br/>client_ts/server_ts 부여"]
+    C --> D["이벤트 로그 적재"]
+    D --> E{"오프라인 발생분?"}
+    E -->|"예"| F["client_ts 기준<br/>주차 귀속"]
+    E -->|"아니오"| G["즉시 귀속"]
+    F --> H["배치 집계(주간/월간/일간)"]
+    G --> H
+    H --> I["KPI 산출<br/>(WPA · O4~O14 등, §8.1)"]
+    I --> J{"§4 모니터링<br/>기준 초과?"}
+    J -->|"예"| K["알림 발송 → 담당자 대응 SLA"]
+    J -->|"아니오"| L["정상 — 다음 집계 주기로"]
+```
 
 ### 8.1 이벤트로 카운팅 가능한 KPI
 
@@ -1025,3 +1471,4 @@ flowchart LR
 |:-:|:-:|---|
 | v1.0 | 2026-08-25 | PRD v0.3 → SRS 최초 변환. ISO/IEC/IEEE 29148 §8.5.2/§9.6을 기준 포맷으로 삼아 §1~§5를 구성하고, 표준 범위를 벗어나는 기존 내용은 §6~§12로 배치(BRS §9.3·StRS §9.4·요구사항 속성 §5.2.8 참조). 새로 작성한 요구사항 없음 |
 | v1.1 | 2026-08-26 | §8을 "실험·검증·롤아웃 계획"(E1~E11 실험 가설·8슬롯 인터뷰 모집 계획)에서 **"KPI 카운팅 계획"**으로 교체 — MVP 개발 단계에서 특정 검증 실험의 표본·판정 임계치를 미리 확정하는 것은 시기상조라는 판단에 따라, KPI 각 요소를 어떤 사용자 행동·이벤트로 카운트할지의 계측 계획으로 대체(§8.1 이벤트 기반 / §8.2 정성 조사 필요 항목·표본 미정). §0-5·§4·§6.2·§9.1·§10·§11의 연쇄 참조도 함께 정리 |
+| v1.2 | 2026-08-26 | 기술 설계 다이어그램 12종 신설 — Component Diagram(§1.3.1), Use Case Diagram(§3.1), Sequence Diagram 5종(§3.1.1·§3.1.3 온보딩/계획카드/미션승인/미접속알림), Flow Chart 3종(결제매칭 판정·3구간 판정·KPI 카운팅 파이프라인), ERD(§3.5), Causal Loop Diagram(§6.2). 전부 기존 요구사항·이벤트 스펙을 그림으로 재표현한 것이며 새 요구사항은 없음. 문서 서두에 다이어그램 색인 추가 |
